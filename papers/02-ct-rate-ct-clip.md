@@ -20,11 +20,79 @@
 CT scan                 → [image engine 🔒] → ●   closer to ▲ or △ ?
 ```
 
+### Eval 1 – clarifications
+
+- **Same training data for both:** CT-RATE training scans. Same test scans and same metrics.
+- **Different way of learning:** CT-CLIP learned from scan + **report text** (never saw labels). CT-Net learned from scan + **18 yes/no labels** (labels were extracted from the same reports).
+- **Why CT-Net uses labels, not reports:** CT-Net is a plain image classifier — it has no text engine, so it *can't* read reports. It stands for the traditional "label everything by hand" approach.
+- **Who trained what:** the authors trained **both**. CT-CLIP = their own model, trained once for general scan–report matching (not for detection). CT-Net = **retrained** on CT-RATE because the original wasn't available; its scores matched the original paper, so it wasn't a weak competitor.
+- **Same answer format:** both give yes/no for the same 18 diseases → fair comparison. Only *how* they decide differs (trained output slot vs comparing to sentences).
+
+```
+        CT-RATE training scans (same for both)
+              │                       │
+   CT-CLIP learns from          CT-Net learns from
+   scan + report text           scan + yes/no labels
+              │                       │
+        Same test scans (CT-RATE val, RAD-ChestCT, UPMC)
+              │                       │
+       yes/no via sentences     yes/no via classifier
+              └──── compare AUROC / F1 ────┘
+```
+
+**Zero-shot eval step by step**
+
+1. Write two sentences per disease: "Nodule is present." / "Nodule is not present." → text engine → ▲ △
+2. Test scan → image engine → ●
+3. Which sentence is ● closer to? → probability (e.g. 80% present)
+4. Repeat for every scan × 18 diseases
+5. Compare with true labels — labels used **only for grading**, never for training CT-CLIP
+6. Score: AUROC (ranking sick above healthy; 1.0 perfect, 0.5 guessing), F1/accuracy/precision; per disease, then averaged
+7. Same for CT-Net, and repeat on outside hospitals (RAD-ChestCT, UPMC)
+
 ## Eval 2 – Finetuned detection (ClassFine vs VocabFine)
 
+- **Question:** zero-shot already works — if we *do* use labels, how much better can it get?
 - **ClassFine:** add one classification layer to the image engine (like a linear probe). Better scores, but fixed to preset labels.
 - **VocabFine:** finetune using positive/negative text prompts. Beats ClassFine AND keeps open-vocabulary ability.
 - **Note:** training all weights mattered more than training only the last layer.
+
+```
+ClassFine:  scan → [image engine 🔧] → ● → [18 fixed slots] → yes/no
+            (text engine thrown away)
+
+VocabFine:  "X is present"     → [text engine 🔧]  → ▲
+            "X is not present" → [text engine 🔧]  → △
+            scan               → [image engine 🔧] → ●   closer to ▲ or △ ?
+```
+
+**Same labels, different meaning**
+
+| | Uses labels? | What the label means | Input | Text engine | Output classes | New disease? | Score |
+|---|---|---|---|---|---|---|---|
+| Zero-shot | ❌ | – | scan + sentences | kept, frozen | any (you write them) | ✅ | Good |
+| ClassFine | ✅ | "this slot should light up" | scan only | removed | fixed 18 | ❌ | Better |
+| VocabFine | ✅ | "this sentence is the correct one" | scan + sentences (train **and** test) | kept, tuned | not fixed — new sentences = new class | ✅ (best on the 18 it was tuned on) | Best |
+
+- **Analogy:** ClassFine = fixed panel of 18 buttons. VocabFine = keeps the talking dashboard and tunes both engines to pick the right sentence.
+
+**What the text engine does (and doesn't)**
+
+- It only **reads** text and turns it into a vector. It **never writes** text.
+- Like a **question box**: put in any question, the only answer is "how well does this scan match?"
+- Lets you ask about new diseases, use different wording, or search with a full report.
+- Writing answers/reports needs an LLM → that's CT-CHAT.
+
+| Part | Reads text? | Writes text? |
+|---|---|---|
+| Text engine (CT-CLIP) | ✅ | ❌ (only a vector) |
+| LLM (CT-CHAT) | ✅ | ✅ |
+
+**Why VocabFine matters**
+
+- You don't have to choose between accuracy and flexibility — training with labels *through sentences* gives both.
+- Practical: improve with some labeled data, still query rare/new findings without new labels or retraining; one model for detection, search and chat.
+- **Caveat:** not free — VocabFine got worse at full report → scan retrieval (tuned on short sentences, so long reports suffer).
 
 ## Eval 3 – Case retrieval
 
