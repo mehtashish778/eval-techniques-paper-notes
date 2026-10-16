@@ -1,0 +1,148 @@
+# Paper 14 – Merlin
+
+- **Title:** Merlin: A Computed Tomography Vision-Language Foundation Model and Dataset (Blankemeier et al., 2024; arXiv v1 June 2024, v2 March 2026 lists a Nature DOI 10.1038/s41586-026-10181-8)
+- **Link:** https://arxiv.org/pdf/2406.06512
+- **One line:** 3D abdominal CT vision-language model.
+  - Image engine: I3D ResNet152, which is ImageNet 2D weights "inflated" to 3D. It reads the whole 224×224×160 volume.
+  - Text engine: Clinical Longformer (4,096 tokens).
+  - Training: binary cross-entropy on about 1,692 EHR phenotype codes (from ICD codes) plus InfoNCE contrast against report findings, with reports split by organ section.
+  - Data: about 15,331 training CTs from one institution (Stanford), more than 6M slices, about 1.8M diagnosis codes, and about 6M report tokens. Image + text + EHR.
+  - Training budget is small: about 160 hours on one A6000.
+- **Eval types used:** zero-shot-text-classification, image-text-retrieval, linear-probe, fine-tuned-classification, report-generation, fine-tuned-segmentation, engine-swap-framework, random-init-baseline, few-shot/label-efficiency, external-validation, transfer-to-other-modality (abdomen → chest CT), ablation, other:EHR-phenotype-prediction, other:data-scaling
+
+---
+
+## Eval 1 – Zero-shot findings classification
+- **Analogy:** two sealed engines, do readings match?
+- **How:** Frozen. Image embeddings are compared with text prompts for 30 findings (present/absent). Metric: F1.
+- **Datasets:** Internal test (5,137 CTs, same hospital, not used in training). External abdominal CTs from 3 sites (out of 44,098 external CTs in total). VerSe (vertebral fractures).
+- **Competitors:** 2D OpenCLIP and 2D BiomedCLIP, applied slice by slice and pooled.
+- **Fairness:**
+  - The baselines are 2D models adapted by the authors.
+  - The Methods say they were fine-tuned on abdominal CT, but the Results call OpenCLIP off-the-shelf. This is an inconsistency in the paper.
+  - There is no 3D CT-specific CLIP baseline in this eval.
+- **Result:**
+  - Merlin F1: 0.741 internal, 0.647 external, and 0.767 on VerSe fractures.
+  - It beats the 2D baselines. Externally it is 19.7% above the second-best architecture in average F1.
+  - Without report splitting, internal F1 drops to 0.656.
+  - Zero-shot Merlin (0.741) even beats supervised Merlin trained on all labels (0.641).
+
+## Eval 2 – Phenotype (EHR code) classification
+- **Analogy:** reading a gauge the engine was built with. The phenotype head is part of pretraining, so this is "off-the-shelf", not a new task.
+- **How:** Uses the pretraining phenotype head directly. Metric: macro AUROC over 692 phenotypes with more than 20 test positives.
+- **Datasets:** Internal test.
+- **Result:**
+  - AUROC 0.812, with 258 phenotypes above 0.85.
+  - A backbone sweep (ResNet > ConvNeXt > Swin) and stem kernel/stride settings are also tested here.
+
+## Eval 3 – Zero-shot cross-modal retrieval
+- **Analogy:** two sealed engines, do readings match?
+- **How:** Frozen. Image → findings and image → impressions (impressions were not used in training, so they are "out-of-distribution" text), and the reverse direction. Metric: Recall@1 within pools of 64.
+- **Datasets:** Internal (5,137 pairs) and external (7,000 pairs).
+- **Competitors:** OpenCLIP and BiomedCLIP (2D, slice-wise).
+- **Fairness:** Same 2D-baseline caveat as Eval 1.
+- **Result:**
+  - Merlin is significantly better (p ≪ 0.01). Externally it is "5–7× better" than the baselines.
+  - Exact numbers are only in the figures.
+
+## Eval 4 – Alternative architecture comparison (linear probe)
+- **Analogy:** engine sealed on a test bench. Full fine-tuning ("engine put in a car and tuned") is in the supplement.
+- **How:**
+  - Frozen image encoders with a linear probe (AdamW, BCE).
+  - Tasks: 30-finding classification (F1) and 1,692-phenotype classification (AUROC/AUPRC).
+  - Label budgets: 10% and 100% of the training labels.
+- **Competitors:**
+  - 2D VLMs: ResNet-CLIP, OpenCLIP, BiomedCLIP.
+  - 2D→3D lifted VLMs.
+  - 3D vision-only models: SwinUNETR, and I3D ResNet152 with self-supervised pretraining.
+  - MedImageInsight.
+  - Google CT Foundation model.
+- **Fairness:**
+  - Many baselines were built or retrained by the authors on the same Merlin data, which is good.
+  - The 2D models were fine-tuned before probing.
+  - The probe epochs are stated inconsistently (10 vs 300).
+  - Google's model is only reported as a relative gap.
+- **Result:** At 100% data, Merlin's F1 is higher by:
+  - 54.7% vs 2D VLMs;
+  - 32.1% vs 2D→3D;
+  - 41.1% vs 3D vision-only;
+  - 33.8% vs MedImageInsight;
+  - 5.0% vs Google CT FM (+7.7% AUROC on phenotypes).
+
+## Eval 5 – External chest CT linear probe (transfer to another body region)
+- **Analogy:** engine sealed on a test bench, tuned in hospital A on abdomen, driven in hospital B on chest.
+- **How:** Frozen encoder plus a linear probe. Metric: AUC over 24 chest conditions. Labels were generated by an LLM (Qwen3-30B) from reports.
+- **Datasets:** 6,243 chest CTs from external Site 3. Merlin never saw chest CT in training.
+- **Competitors:** CT-CLIP, M3FM, CT-FM.
+- **Fairness:** Same probe and data for all models. These competitors are chest- or whole-body-trained, so they have a domain advantage.
+- **Result:**
+  - Merlin is +24.7% vs CT-CLIP and +14.0% vs M3FM.
+  - It roughly matches CT-FM.
+  - It is +12.3% over the average of the three.
+
+## Eval 6 – 5-year chronic disease prediction
+- **Analogy:** engine put in a car and tuned, plus "tune with only a handful of examples" (10% labels).
+- **How:**
+  - Fine-tuned, with one binary head per disease (multi-task BCE).
+  - The 6 diseases are CKD, diabetes, hypertension, ischemic heart disease, ASCVD, and osteoporosis.
+  - Metric: AUROC.
+- **Competitors:** An ImageNet-initialized I3D ResNet152, image-only (the same architecture without Merlin pretraining).
+- **Fairness:** Same architecture and recipe, so this is a clean init comparison.
+- **Result:**
+  - AUROC 0.757 with 100% of labels (about 7% above the ImageNet baseline).
+  - AUROC 0.708 with 10% of labels (about 4.4% above).
+
+## Eval 7 – Radiology report generation
+- **Analogy:** engine connected to a talking dashboard.
+- **How:** Merlin features go through a linear adapter into RadLlama-7B, which is tuned with LoRA (about 5% of parameters). Reports are generated section by section. Metrics: RadGraph-F1, BERTScore, ROUGE-2, BLEU.
+- **Competitors:** RadFM.
+- **Fairness:** It is not stated clearly whether RadFM was fine-tuned on Merlin's data. If it was not, the comparison is uneven.
+- **Result:**
+  - Merlin "consistently outperforms" RadFM. Numbers are only in figures.
+  - Qualitatively, Merlin tends to under-report positive findings.
+
+## Eval 8 – 3D organ segmentation
+- **Analogy:** engine swap. The Merlin ResNet152 encoder is dropped into an encoder-decoder (nnU-Net-style car body) and tuned. It includes a random-init baseline (broken-in vs brand-new engine) and a few-shot setting.
+- **How:**
+  - Fine-tuned for 20 organs. Metric: Dice.
+  - Data: TotalSegmentator subset with 293 train / 74 val / 34 test scans. The 10% setting uses 28 training scans.
+- **Competitors:**
+  - nnU-Net.
+  - Swin UNETR.
+  - The same ResNet152 encoder-decoder with random, ImageNet, or Merlin init.
+- **Fairness:** Same splits for all, and trained by the authors.
+- **Result:**
+  - At 10% data, Merlin beats nnU-Net by about 4.7% average Dice and wins 12 of 20 organs (prostate +41%).
+  - At 100% data, nnU-Net is slightly better (by about 0.006 Dice).
+  - The three ResNet152 inits differ by only about 0.01 Dice.
+  - Swin UNETR is about 6.3% below the conv models.
+  - Pretraining helps mainly when labels are scarce.
+
+## Eval 9 – Data scaling and ablations
+- **Analogy:** how much running-in the engine needs, and which parts of the build matter.
+- **How:** Pretraining on 1/10/20/40/100% of the data. Ablations:
+  - I3D ImageNet init;
+  - multi-task vs staged training;
+  - with/without EHR;
+  - report splitting.
+- **Result:**
+  - Performance grows with data.
+  - Reports drive most of the gain; EHR adds a modest amount.
+  - Report splitting and ImageNet inflation help.
+
+## Key takeaways
+- This is a very broad eval suite ("752 tasks", 6 task types). It covers nearly every category:
+  - sealed bench (zero-shot, probes);
+  - tuned car (disease prediction, segmentation);
+  - talking dashboard (report generation);
+  - engine swap (segmentation).
+- It is a good model to compare with CT-CLIP, CT-FM, RadFM, and MedImageInsight.
+- It has big external validation (44,098 CTs from 3 sites plus public sets). It also has a striking abdomen→chest transfer: it beats CT-CLIP on chest CT without ever seeing chest scans.
+- Weaknesses:
+  - The zero-shot and retrieval baselines are mostly 2D CLIPs adapted slice-wise. These are easy opponents; the stronger 3D competitors appear only in the probe sections.
+  - Several key numbers are only in figures.
+  - There are internal inconsistencies (data counts, probe epochs, OpenCLIP fine-tuned or not).
+  - Report generation vs RadFM may not be a like-for-like setup.
+- The segmentation result is the usual honest pattern seen with Models Genesis, SuPreM, and Swin UNETR SSL: pretraining helps with few labels, but nnU-Net from scratch catches up with full data.
+- Unusual: the "phenotype classification" eval reuses a head trained during pretraining, so it is closer to an in-distribution test than a downstream task.
+- "Zero-shot" here is the standard CLIP meaning (prompt matching, no task training).
