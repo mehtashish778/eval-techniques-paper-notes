@@ -6,9 +6,44 @@ Running notes on **how papers test their models**, in simple words, using an eng
 
 | # | Paper | Notes |
 |---|---|---|
-| 1 | SPECTRE – Scaling Self-Supervised and Cross-Modal Pretraining for Volumetric CT Transformers | [papers/01-spectre.md](papers/01-spectre.md) |
-| 2 | CT-RATE / CT-CLIP / CT-CHAT – Generalist Foundation Models from a Multimodal Dataset for 3D CT | [papers/02-ct-rate-ct-clip.md](papers/02-ct-rate-ct-clip.md) |
-| 3 | CT-FM – Vision Foundation Models for Computed Tomography | [papers/03-ct-fm.md](papers/03-ct-fm.md) |
+| 1 | SPECTRE (CT foundation model) | [papers/01-spectre.md](papers/01-spectre.md) |
+| 2 | CT-RATE / CT-CLIP / CT-CHAT | [papers/02-ct-rate-ct-clip.md](papers/02-ct-rate-ct-clip.md) |
+| 3 | CT-FM (Vision Foundation Models for CT) | [papers/03-ct-fm.md](papers/03-ct-fm.md) |
+| 4 | FMCIB (Foundation Model for Cancer Imaging Biomarkers) | [papers/04-fmcib.md](papers/04-fmcib.md) |
+| 5 | VoCo | [papers/05-voco.md](papers/05-voco.md) |
+| 6 | SuPreM | [papers/06-suprem.md](papers/06-suprem.md) |
+| 7 | VISTA3D | [papers/07-vista3d.md](papers/07-vista3d.md) |
+| 8 | PASTA | [papers/08-pasta.md](papers/08-pasta.md) |
+| 9 | MedImageInsight | [papers/09-medimageinsight.md](papers/09-medimageinsight.md) |
+| 10 | Models Genesis | [papers/10-models-genesis.md](papers/10-models-genesis.md) |
+| 11 | TAP-CT | [papers/11-tap-ct.md](papers/11-tap-ct.md) |
+| 12 | MedCLIP | [papers/12-medclip.md](papers/12-medclip.md) |
+| 13 | CT-Net | [papers/13-ct-net.md](papers/13-ct-net.md) |
+| 14 | Merlin | [papers/14-merlin.md](papers/14-merlin.md) |
+| 15 | SAM-Med3D | [papers/15-sam-med3d.md](papers/15-sam-med3d.md) |
+| 16 | RadFM | [papers/16-radfm.md](papers/16-radfm.md) |
+| 17 | CT2Rep | [papers/17-ct2rep.md](papers/17-ct2rep.md) |
+| 18 | TotalSegmentator | [papers/18-totalsegmentator.md](papers/18-totalsegmentator.md) |
+| 19 | Med3D / MedicalNet | [papers/19-med3d.md](papers/19-med3d.md) |
+| 20 | SegVol | [papers/20-segvol.md](papers/20-segvol.md) |
+| 21 | DoDNet | [papers/21-dodnet.md](papers/21-dodnet.md) |
+| 22 | Universal Model (CLIP-Driven) | [papers/22-universal-model.md](papers/22-universal-model.md) |
+| 23 | MAE3D | [papers/23-mae3d.md](papers/23-mae3d.md) |
+| 24 | TransVW (Transferable Visual Words) | [papers/24-transvw.md](papers/24-transvw.md) |
+| 25 | 3D Rotation (ROT), within "3D Self-Supervised Methods for Medical Imaging" | [papers/25-rot.md](papers/25-rot.md) |
+| 26 | Rubik's Cube (Rubik's cube recovery) | [papers/26-rubiks-cube.md](papers/26-rubiks-cube.md) |
+| 27 | Rubik's Cube++ | [papers/27-rubiks-cube-plus-plus.md](papers/27-rubiks-cube-plus-plus.md) |
+| 28 | PCRL (Preservational Contrastive Representation Learning) | [papers/28-pcrl.md](papers/28-pcrl.md) |
+| 29 | PCRLv2 | [papers/29-pcrlv2.md](papers/29-pcrlv2.md) |
+| 30 | Swin UNETR SSL | [papers/30-swin-unetr-ssl.md](papers/30-swin-unetr-ssl.md) |
+| 31 | SwinMM | [papers/31-swinmm.md](papers/31-swinmm.md) |
+| 32 | GL-MAE | [papers/32-gl-mae.md](papers/32-gl-mae.md) |
+| 33 | GVSL | [papers/33-gvsl.md](papers/33-gvsl.md) |
+| 34 | UniMiSS | [papers/34-unimiss.md](papers/34-unimiss.md) |
+| 35 | JSSL | [papers/35-jssl.md](papers/35-jssl.md) |
+| 36 | NiftyNet | [papers/36-niftynet.md](papers/36-niftynet.md) |
+
+**Start here for revision:** [CONSOLIDATED.md](CONSOLIDATED.md) – all eval techniques grouped, paper × eval matrix, checklist.
 
 New paper? Copy [TEMPLATE.md](TEMPLATE.md) into `papers/`.
 
