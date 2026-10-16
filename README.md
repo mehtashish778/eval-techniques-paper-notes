@@ -8,6 +8,7 @@ Running notes on **how papers test their models**, in simple words, using an eng
 |---|---|---|
 | 1 | SPECTRE – Scaling Self-Supervised and Cross-Modal Pretraining for Volumetric CT Transformers | [papers/01-spectre.md](papers/01-spectre.md) |
 | 2 | CT-RATE / CT-CLIP / CT-CHAT – Generalist Foundation Models from a Multimodal Dataset for 3D CT | [papers/02-ct-rate-ct-clip.md](papers/02-ct-rate-ct-clip.md) |
+| 3 | CT-FM – Vision Foundation Models for Computed Tomography | [papers/03-ct-fm.md](papers/03-ct-fm.md) |
 
 New paper? Copy [TEMPLATE.md](TEMPLATE.md) into `papers/`.
 
@@ -33,6 +34,12 @@ New paper? Copy [TEMPLATE.md](TEMPLATE.md) into `papers/`.
 | Open-vocabulary finetune (VocabFine) | Tune both engines but keep them speaking the same language. | Better accuracy and still works with any text prompt. | 2 |
 | Image → image retrieval | One sealed engine. Find scans whose readings are closest to a query scan. | Does it group similar cases together? | 2 |
 | Chat / VQA / report generation | Engine connected to a talking dashboard (LLM). Grade what it says. | Can it explain findings in words? | 2 |
+| Random-init baseline | Two identical engines: one broken in (pretrained), one brand new. | Pure value of pretraining. | 3 |
+| Few-shot fine-tuning | Tune the engine with only 5–20 examples. | Does pretraining help when labels are scarce? | 3 |
+| External test ("zero-shot transfer") | Tune in hospital A, drive in hospital B without re-tuning. | Does it generalise to new data? | 2, 3 |
+| Embedding inspection (t-SNE, PCA, patch search, saliency, test-retest) | Open the sealed engine's readings and check they make sense. | Is the representation meaningful and stable? | 3 |
+
+> ⚠️ "Zero-shot" means different things in different papers: text prompts (CT-CLIP), frozen embeddings, or testing on a new hospital without retraining (CT-FM). Always check.
 
 ### kNN in simple words
 
